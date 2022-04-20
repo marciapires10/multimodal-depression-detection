@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 
 from sklearn.utils import shuffle
-from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.feature_extraction.text import TfidfVectorizer
 
 from sklearn.metrics import f1_score, recall_score, make_scorer
 
@@ -19,10 +19,10 @@ warnings.filterwarnings('ignore')
 
 df = pd.read_csv("../data_preprocessing/final_clean_transcripts.csv", index_col="Participant_ID")
 
-# convert to occurrence matrix
-cv = CountVectorizer(min_df=3)
 
-X = cv.fit_transform(df.Transcript).toarray()
+tfIdfVectorizer = TfidfVectorizer(ngram_range=(1, 2))
+X = tfIdfVectorizer.fit_transform(df.Transcript)
+X_dense = X.todense()
 y = df.PHQ8_Binary
 
 
@@ -46,14 +46,19 @@ def train_test(X, y, test="../test_split_Depression_AVEC2017.csv"):
     return np.array(X_train), np.array(X_test), np.array(y_train), np.array(y_test)
 
 
-X_train, X_test, y_train, y_test = train_test(X, y)
+X_train, X_test, y_train, y_test = train_test(X_dense, y)
+X_train = X_train.reshape((142, 82115))
+X_test = X_test.reshape((45, 82115))
+
+y_train = y_train.reshape(142)
+y_test = y_test.reshape(45)
+
 X_train, y_train = shuffle(X_train, y_train, random_state=42)
 
 
 def k_cross_validation(model, grid, X=X_train, y=y_train):
     rkf = RepeatedKFold(n_splits=10, n_repeats=3, random_state=42)
     scoring = {"f1": make_scorer(f1_score), "recall": make_scorer(recall_score)}
-
     cv = GridSearchCV(model, grid, cv=rkf, scoring=scoring, refit='f1')
 
     f1_score_res = []
@@ -79,17 +84,17 @@ def logistic_regression():
 
     grid = {"C": np.logspace(-3, 3, 7), "penalty": ["l1", "l2"]}
     #model = LogisticRegression(n_jobs=3, C=10000)
-    model = LogisticRegression()
+    model = LogisticRegression(solver='liblinear')
     f1_score_res, recall_res, best_params = k_cross_validation(model, grid)
 
     f1_val = np.mean(f1_score_res)
     recall_val = np.mean(recall_res)
 
     print(f"Logistic Regression\nBest F1 Score: {f1_val}\nBest Recall Score: {recall_val}\n")
-    print("Tuned hyperparameters :", best_params)
+    print("Tuned hpyerparameters :", best_params)
 
 
-#logistic_regression()
+logistic_regression()
 
 
 def random_forest():
@@ -107,14 +112,13 @@ def random_forest():
     recall_val = np.mean(recall_res)
 
     print(f"Random Forest\nBest F1 Score: {f1_val}\nBest Recall Score: {recall_val}\n")
-    print("Tuned hyperparameters :", best_params)
+    print("Tuned hpyerparameters :", best_params)
 
 
 #random_forest()
 
 
 def decision_tree():
-
     grid = {
         'criterion': ['gini', 'entropy'], 'max_depth': [2, 4, 6, 8, 10, 12],
     }
