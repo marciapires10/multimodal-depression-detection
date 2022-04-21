@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+from sklearn import clone
 
 from sklearn.utils import shuffle
 from sklearn.feature_extraction.text import CountVectorizer
@@ -95,10 +96,10 @@ def logistic_regression():
 def random_forest():
 
     grid = {
-        'n_estimators': [1, 100],
-        'max_features': ['auto', 'sqrt', 'log2'],
-        'max_depth': [4, 5, 6, 7, 8],
-        'criterion': ['gini', 'entropy']
+        'n_estimators': [1, 10],
+        #'max_features': ['auto', 'sqrt'],
+        #'max_depth': [4, 5, 6, 7, 8],
+        #'criterion': ['gini', 'entropy']
     }
     model = RandomForestClassifier(random_state=42)
     f1_score_res, recall_res, best_params = k_cross_validation(model, grid)
@@ -110,7 +111,7 @@ def random_forest():
     print("Tuned hyperparameters :", best_params)
 
 
-#random_forest()
+random_forest()
 
 
 def decision_tree():
