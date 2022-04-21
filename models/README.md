@@ -29,3 +29,73 @@
     </tr>
   
 </table>
+
+### bag-of-words with GridSearchCV
+<table>
+    <tr>
+      <td><b>Model</b></td>
+      <td><b>Tuned hyperparameters</b></td>
+      <td><b>F1 Score</b></td>
+      <td><b>Recall</b></td>
+    </tr>
+    <tr>
+      <td>Logistic Regression</td>
+      <td>C=1 and penalty=l2</td>
+      <td>0.4325</td>
+      <td>0.4244</td>
+    </tr>
+    <tr>
+        <td>Random Forest</td>
+        <td>---</td>
+        <td>---</td>
+        <td>---</td>
+      </tr>
+  <tr>
+      <td>Decision Tree</td>
+      <td>Criterion=entropy and max_depth=6</td>
+      <td>0.4450</td>
+      <td>0.4763</td>
+    </tr>
+  <tr>
+      <td>SVM Linear</td>
+      <td>C=1 and kernel=linear</td>
+      <td>0.3946</td>
+      <td>0.3928</td>
+    </tr>
+  
+</table>
+
+### tf-idf with GridSearchCV
+<table>
+    <tr>
+      <td><b>Model</b></td>
+      <td><b>Tuned hyperparameters</b></td>
+      <td><b>F1 Score</b></td>
+      <td><b>Recall</b></td>
+    </tr>
+    <tr>
+      <td>Logistic Regression</td>
+      <td></td>
+      <td></td>
+      <td></td>
+    </tr>
+    <tr>
+        <td>Random Forest</td>
+        <td></td>
+        <td></td>
+        <td></td>
+      </tr>
+  <tr>
+      <td>Decision Tree</td>
+      <td></td>
+      <td></td>
+      <td></td>
+    </tr>
+  <tr>
+      <td>SVM Linear</td>
+      <td></td>
+      <td></td>
+      <td></td>
+    </tr>
+  
+</table>
