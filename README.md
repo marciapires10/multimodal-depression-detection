@@ -5,6 +5,7 @@
 Currently only working on the <b>text modality</b>.
 - <b>data_preprocessing</b> folder: contains the work done for preprocessing all the transcripts from the dataset.
 - <b>models</b> folder: contains the vectorization methods along with the train-test results from different models.
+- <b>statistics</b> folder: contains some data visualization. 
 
 ## Setup
 _in_ _progress_
