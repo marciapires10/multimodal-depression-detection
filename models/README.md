@@ -46,9 +46,9 @@
     </tr>
     <tr>
         <td>Random Forest</td>
-        <td>---</td>
-        <td>---</td>
-        <td>---</td>
+        <td>N_estimators=1</td>
+        <td>0.2634</td>
+        <td>0.2594</td>
       </tr>
   <tr>
       <td>Decision Tree</td>
@@ -75,27 +75,27 @@
     </tr>
     <tr>
       <td>Logistic Regression</td>
-      <td></td>
-      <td></td>
-      <td></td>
+      <td>C=1000 and penalty=l1</td>
+      <td>0.3812</td>
+      <td>0.3094</td>
     </tr>
     <tr>
         <td>Random Forest</td>
-        <td></td>
-        <td></td>
-        <td></td>
+        <td>N_estimators=1</td>
+        <td>0.2633</td>
+        <td>0.2490</td>
       </tr>
   <tr>
       <td>Decision Tree</td>
-      <td></td>
-      <td></td>
-      <td></td>
+      <td>---</td>
+      <td>---</td>
+      <td>---</td>
     </tr>
   <tr>
       <td>SVM Linear</td>
-      <td></td>
-      <td></td>
-      <td></td>
+      <td>---</td>
+      <td>---</td>
+      <td>---</td>
     </tr>
   
 </table>
