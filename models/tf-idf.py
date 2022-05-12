@@ -1,5 +1,8 @@
+from collections import Counter
+
 import pandas as pd
 import numpy as np
+from imblearn.under_sampling import RandomUnderSampler
 
 from sklearn.utils import shuffle
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -47,13 +50,20 @@ def train_test(X, y, test="../test_split_Depression_AVEC2017.csv"):
 
 
 X_train, X_test, y_train, y_test = train_test(X_dense, y)
-X_train = X_train.reshape((142, 82115))
-X_test = X_test.reshape((45, 82115))
+X_train = X_train.reshape((142, 78765))
+X_test = X_test.reshape((45, 78765))
 
 y_train = y_train.reshape(142)
 y_test = y_test.reshape(45)
 
 X_train, y_train = shuffle(X_train, y_train, random_state=42)
+
+
+# undersampling
+
+undersample = RandomUnderSampler(sampling_strategy='majority')
+X_train, y_train = undersample.fit_resample(X_train, y_train)
+#print(Counter(y_train))
 
 
 def k_cross_validation(model, grid, X=X_train, y=y_train):
@@ -132,7 +142,7 @@ def decision_tree():
     print("Tuned hyperparameters :", best_params)
 
 
-decision_tree()
+#decision_tree()
 
 
 def svm():
@@ -150,5 +160,5 @@ def svm():
     print("Tuned hyperparameters :", best_params)
 
 
-#svm()
+svm()
 

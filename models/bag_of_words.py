@@ -1,5 +1,9 @@
+from collections import Counter
+
 import pandas as pd
 import numpy as np
+from keras import Input
+from keras.layers import LSTM, RepeatVector, TimeDistributed, Dense, Embedding, Dropout
 from sklearn import clone
 
 from sklearn.utils import shuffle
@@ -9,10 +13,12 @@ from sklearn.metrics import f1_score, recall_score, make_scorer
 
 from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
 from sklearn.svm import SVC
 from sklearn.model_selection import RepeatedKFold
 from sklearn.model_selection import GridSearchCV
+from imblearn.under_sampling import RandomUnderSampler
+from keras.models import Sequential
 
 import warnings
 
@@ -49,6 +55,15 @@ def train_test(X, y, test="../test_split_Depression_AVEC2017.csv"):
 
 X_train, X_test, y_train, y_test = train_test(X, y)
 X_train, y_train = shuffle(X_train, y_train, random_state=42)
+#print(Counter(y_train))
+
+print(X_train)
+
+# undersampling
+
+undersample = RandomUnderSampler(sampling_strategy='majority')
+X_train, y_train = undersample.fit_resample(X_train, y_train)
+#print(Counter(y_train))
 
 
 def k_cross_validation(model, grid, X=X_train, y=y_train):
@@ -90,7 +105,7 @@ def logistic_regression():
     print("Tuned hyperparameters :", best_params)
 
 
-#logistic_regression()
+logistic_regression()
 
 
 def random_forest():
@@ -111,7 +126,7 @@ def random_forest():
     print("Tuned hyperparameters :", best_params)
 
 
-random_forest()
+#random_forest()
 
 
 def decision_tree():
@@ -148,4 +163,5 @@ def svm():
 
 
 #svm()
+
 
