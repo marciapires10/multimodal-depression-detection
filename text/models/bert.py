@@ -1,3 +1,6 @@
+import os
+import random
+
 import numpy as np
 import pandas as pd
 import torch
@@ -81,6 +84,25 @@ count_train = count_depression(y_train)
 print("Depression distribution on train dataset AFTER balancing: (ND/D)", count_train)
 
 
+train_final = pd.DataFrame({'Transcript': X_train.tolist(), 'PHQ8_Binary': y_train}).to_csv('train_undersample.csv', index=False)
+# train_final.to_csv('train_undersample.csv', index=False)
+df_train = pd.read_csv("train_undersample.csv")
+# print(df_train.head())
+X_train = df_train.Transcript
+y_train = df_train.PHQ8_Binary
+
+# set seed for reproducibility
+def set_seed(seed):
+    torch.manual_seed(seed)
+    np.random.seed(seed)
+    random.seed(seed)
+
+    # torch.cuda.manual_seed_all(seed)
+    # torch.backends.cudnn.deterministic = True
+    # torch.backends.cudnn.benchmark = False
+    #os.environ['PYTHONHASHSEED'] = str(seed)
+
+
 # Followed the following tutorial for BERT: https://medium.com/analytics-vidhya/a-gentle-introduction-to-implementing-bert-using-hugging-face-35eb480cff3
 
 
@@ -105,15 +127,19 @@ def encode(data, tokenizer):
 
 
 # get batches: convert lists to tensors, wrap tensors, create samplers and return final dataloader
+
+# last modification: 09.06, 17h20 added a generator as suggested by: https://towardsdatascience.com/random-seeds-and-reproducibility-933da79446e3
 def get_batches(x, y, tokenizer, batch_size):
 
     y = torch.tensor(list(y), dtype=torch.long)
     input_ids, attention_mask = encode(x, tokenizer)
     tensor_dataset = torch.utils.data.TensorDataset(input_ids, attention_mask, y)
     tensor_randomsampler = torch.utils.data.RandomSampler(tensor_dataset)
-    tensor_dataloader = torch.utils.data.DataLoader(tensor_dataset, sampler=tensor_randomsampler, batch_size=batch_size)
+    g = torch.Generator()
+    g.manual_seed(42)
+    tensor_dataloader = torch.utils.data.DataLoader(tensor_dataset, sampler=tensor_randomsampler, batch_size=batch_size,
+                                                    generator=g)
     return tensor_dataloader
-
 
 train_dataloader = get_batches(X_train, y_train, tokenizer, batch_size=2)
 val_dataloader = get_batches(X_val, y_val, tokenizer, batch_size=2)
@@ -123,7 +149,7 @@ test_dataloader = get_batches(X_test, y_test, tokenizer, batch_size=2)
 # define parameters for the model
 epochs = 2
 parameters = {
-    'learning_rate': 1e-5,
+    'learning_rate': 5e-5,
     'num_warmup_steps': 1000,
     'num_training_steps': len(train_dataloader) * epochs,
     'max_grad_norm': 1
@@ -161,7 +187,7 @@ def train_model(train_dataloader, model, optimizer, scheduler, epochs, device):
         #     print("loss - {0}, iteration - {1}/{2}".format(loss, e + 1, i))
 
         model.zero_grad()
-        optimizer.zero_grad()
+        #optimizer.zero_grad()
 
         # calculate loss
         train_loss = train_loss + loss.item()
@@ -229,6 +255,8 @@ def evaluate_test(test_dataloader, model, device):
 
     return print(classification_report(y_true, y_pred))
 
+
+set_seed(42)
 
 train_losses, valid_losses = [], []
 for e in range(epochs):
