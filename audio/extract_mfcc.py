@@ -35,7 +35,7 @@ for idx, id in enumerate(x):
         print(path)
         extracted_mfcc.append([id, extract_mfcc(path), y[idx]])
     except:
-        print("Participant " + id + " doesn't exist.")
+        print("Participant " + str(id) + " doesn't exist.")
 
 mfcc_df = pd.DataFrame(extracted_mfcc, columns=['Participant_ID', 'MFCC', 'PHQ8_Binary'])
 mfcc_df.to_csv('mfcc_features.csv')
