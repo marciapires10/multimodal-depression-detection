@@ -31,7 +31,7 @@ y = df.PHQ8_Binary
 extracted_mfcc = []
 for idx, id in enumerate(x):
     try:
-        path = 'wav_wosilence/{}_wosilence.wav'.format(id)
+        path = 'wav_wosilence/{}_final.wav'.format(id)
         print(path)
         extracted_mfcc.append([id, extract_mfcc(path), y[idx]])
     except:
