@@ -15,7 +15,7 @@ def append_transcripts(filename, values):
 #files = os.listdir(curr_directory)
 
 # get transcripts files at 'transcripts' folder
-transcripts_path = './transcripts'
+transcripts_path = 'transcripts'
 move_to = os.chdir(transcripts_path)
 files = os.listdir(move_to)
 
