@@ -1,7 +1,9 @@
+import math
 from collections import Counter
 
 import pandas as pd
 import numpy as np
+from imblearn.over_sampling import RandomOverSampler
 from keras import Input
 from keras.layers import LSTM, RepeatVector, TimeDistributed, Dense, Embedding, Dropout
 from sklearn import clone
@@ -9,7 +11,7 @@ from sklearn import clone
 from sklearn.utils import shuffle
 from sklearn.feature_extraction.text import CountVectorizer
 
-from sklearn.metrics import f1_score, recall_score, make_scorer
+from sklearn.metrics import f1_score, recall_score, make_scorer, mean_absolute_error, mean_squared_error
 
 from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier
@@ -25,7 +27,7 @@ import warnings
 warnings.filterwarnings('ignore')
 
 df = pd.read_csv("../data_preprocessing/final_clean_transcripts.csv", index_col="Participant_ID")
-
+#print(df.info())
 # convert to occurrence matrix
 cv = CountVectorizer(min_df=3)
 
@@ -57,12 +59,12 @@ X_train, X_test, y_train, y_test = train_test(X, y)
 X_train, y_train = shuffle(X_train, y_train, random_state=42)
 #print(Counter(y_train))
 
-print(X_train)
 
-# undersampling
-
-undersample = RandomUnderSampler(sampling_strategy='majority')
-X_train, y_train = undersample.fit_resample(X_train, y_train)
+# oversampling
+# undersample = RandomUnderSampler(sampling_strategy='majority')
+oversample = RandomOverSampler(sampling_strategy='minority')
+X_train, y_train = oversample.fit_resample(X_train, y_train)
+X_train, y_train = shuffle(X_train, y_train, random_state=42)
 #print(Counter(y_train))
 
 
@@ -74,6 +76,8 @@ def k_cross_validation(model, grid, X=X_train, y=y_train):
 
     f1_score_res = []
     recall_res = []
+    mae_res = []
+    rmse_res = []
 
     for train_index, test_index in rkf.split(X):
         X_train, X_test = X[train_index], X[test_index]
@@ -88,41 +92,56 @@ def k_cross_validation(model, grid, X=X_train, y=y_train):
         recall = recall_score(y_test, predict_values)
         recall_res.append(recall)
 
-    return f1_score_res, recall_res, cv.best_params_
+        mae = mean_absolute_error(y_test, predict_values)
+        mae_res.append(mae)
+
+        mse = mean_squared_error(y_test, predict_values)
+        rmse = math.sqrt(mse)
+        rmse_res.append(rmse)
+
+    return f1_score_res, recall_res, mae_res, rmse_res, cv.best_params_
 
 
 def logistic_regression():
 
-    grid = {"C": np.logspace(-3, 3, 7), "penalty": ["l1", "l2"]}
+    #grid = {"C": np.logspace(-3, 3, 7), "penalty": ["l1", "l2"]}
+    grid = [{'C': np.logspace(-3, 3, 7), 'penalty': ['l1'], 'solver': ['liblinear', 'sag', 'saga']},
+            {'C': np.logspace(-3, 3, 7), 'penalty': ['l2'], 'solver': ['lbfgs', 'newton-cg']}]
     #model = LogisticRegression(n_jobs=3, C=10000)
     model = LogisticRegression()
-    f1_score_res, recall_res, best_params = k_cross_validation(model, grid)
+    f1_score_res, recall_res, mae_res, rmse_res, best_params = k_cross_validation(model, grid)
 
     f1_val = np.mean(f1_score_res)
     recall_val = np.mean(recall_res)
+    mae_val = np.mean(mae_res)
+    rmse_val = np.mean(rmse_res)
 
-    print(f"Logistic Regression\nBest F1 Score: {f1_val}\nBest Recall Score: {recall_val}\n")
+    print(f"Logistic Regression\nBest F1 Score: {f1_val}\nBest Recall Score: {recall_val}\n"
+          f"MAE: {mae_val}\nRMSE: {rmse_val}\n")
     print("Tuned hyperparameters :", best_params)
 
 
-logistic_regression()
+#logistic_regression()
 
 
 def random_forest():
 
     grid = {
         'n_estimators': [1, 10],
-        #'max_features': ['auto', 'sqrt'],
-        #'max_depth': [4, 5, 6, 7, 8],
-        #'criterion': ['gini', 'entropy']
+        'max_features': ['auto', 'sqrt'],
+        'max_depth': [4, 5, 6, 7, 8],
+        'criterion': ['gini', 'entropy']
     }
     model = RandomForestClassifier(random_state=42)
-    f1_score_res, recall_res, best_params = k_cross_validation(model, grid)
+    f1_score_res, recall_res, mae_res, rmse_res, best_params = k_cross_validation(model, grid)
 
     f1_val = np.mean(f1_score_res)
     recall_val = np.mean(recall_res)
+    mae_val = np.mean(mae_res)
+    rmse_val = np.mean(rmse_res)
 
-    print(f"Random Forest\nBest F1 Score: {f1_val}\nBest Recall Score: {recall_val}\n")
+    print(f"Random Forest\nBest F1 Score: {f1_val}\nBest Recall Score: {recall_val}\n"
+          f"MAE: {mae_val}\nRMSE: {rmse_val}\n")
     print("Tuned hyperparameters :", best_params)
 
 
@@ -135,16 +154,19 @@ def decision_tree():
         'criterion': ['gini', 'entropy'], 'max_depth': [2, 4, 6, 8, 10, 12],
     }
     model = DecisionTreeClassifier(random_state=42, min_samples_leaf=10)
-    f1_score_res, recall_res, best_params = k_cross_validation(model, grid)
+    f1_score_res, recall_res, mae_res, rmse_res, best_params = k_cross_validation(model, grid)
 
     f1_val = np.mean(f1_score_res)
     recall_val = np.mean(recall_res)
+    mae_val = np.mean(mae_res)
+    rmse_val = np.mean(rmse_res)
 
-    print(f"Decision Tree\nBest F1 Score: {f1_val}\nBest Recall Score: {recall_val}\n")
+    print(f"Decision Tree\nBest F1 Score: {f1_val}\nBest Recall Score: {recall_val}\n"
+          f"MAE: {mae_val}\nRMSE: {rmse_val}\n")
     print("Tuned hyperparameters :", best_params)
 
 
-#decision_tree()
+decision_tree()
 
 
 def svm():
@@ -153,12 +175,15 @@ def svm():
                         {'kernel': ['poly'], 'degree': [3, 4, 5], 'C': [1, 10, 100]},
                         {'kernel': ['linear'], 'C': [1, 10, 100]}]
     model = SVC()
-    f1_score_res, recall_res, best_params = k_cross_validation(model, grid)
+    f1_score_res, recall_res, mae_res, rmse_res, best_params = k_cross_validation(model, grid)
 
     f1_val = np.mean(f1_score_res)
     recall_val = np.mean(recall_res)
+    mae_val = np.mean(mae_res)
+    rmse_val = np.mean(rmse_res)
 
-    print(f"SVM \nBest F1 Score: {f1_val}\nBest Recall Score: {recall_val}\n")
+    print(f"SVM \nBest F1 Score: {f1_val}\nBest Recall Score: {recall_val}\n"
+          f"MAE: {mae_val}\nRMSE: {rmse_val}\n")
     print("Tuned hyperparameters :", best_params)
 
 
