@@ -5,7 +5,7 @@ from pydub import AudioSegment
 import pandas as pd
 
 #transcripts_df = pd.read_csv("../text/data_preprocessing/transcripts/")
-transcripts_path = "../text/data_preprocessing/transcripts/"
+transcripts_path = "../../text/data_preprocessing/transcripts/"
 transcripts_list = os.listdir(transcripts_path)
 
 transcripts_list = sorted(transcripts_list)

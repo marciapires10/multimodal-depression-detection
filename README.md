@@ -1,12 +1,19 @@
 # Multimodal Depression Detection
-> brief description
+> The main objective of this project is to explore methods of machine learning and deep learning for automatic emotion analysis and depression classification in unstructured text.
+
+Author: Márcia Pires (marcia.pires@ua.pt) at University of Aveiro
 
 ## Contents
-Currently only working on the <b>text modality</b>.
+Currently working on the <b>audio modality</b>.
+
+<b>Text</b> modality:
 - <b>data_preprocessing</b> folder: contains the work done for preprocessing all the transcripts from the dataset.
 - <b>models</b> folder: contains the vectorization methods along with the train-test results from different models.
 - <b>statistics</b> folder: contains some data visualization. 
 
+<b>Audio</b> modality:
+- <b>data_preprocessing</b> folder: contains the work done for preprocessing all the audio features from the dataset
+- <b>models</b> folder: contains the train-test results from different models.
 ## Setup
 _in_ _progress_
 
