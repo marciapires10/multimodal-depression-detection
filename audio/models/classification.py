@@ -75,8 +75,9 @@ def apply_oversampling(X_train, y_train):
     X_train, y_train = shuffle(X_train, y_train, random_state=42)
     print(Counter(y_train))
 
+    return X_train, y_train
 
-apply_oversampling(X_train, y_train)
+X_train, y_train = apply_oversampling(X_train, y_train)
 
 
 def k_cross_validation(model, grid, X=X_train, y=y_train):
