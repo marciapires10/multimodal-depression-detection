@@ -27,7 +27,7 @@ from tensorflow.keras.optimizers import SGD
 
 warnings.filterwarnings('ignore')
 
-df = pd.read_csv("../full_labels.csv")
+df = pd.read_csv("../data_preprocessing/mfcc_features.csv", index_col="Participant_ID")
 y = df.PHQ8_Binary
 
 # all features concat with only low variance
@@ -42,7 +42,8 @@ df_allfeatures2 = pd.read_csv("../data_preprocessing/all_audio_features2.csv", i
 X_all = df_allfeatures['all_features_concat'].values.tolist()
 X_all2 = df_allfeatures2['all_features_concat'].values.tolist()
 
-def train_test(X, y, test="../text/test_split_Depression_AVEC2017.csv"):
+
+def train_test(X, y, test="/home/marciapires/Desktop/multimodal-depression-detection/test_split_Depression_AVEC2017.csv"):
     test_participants = pd.read_csv(test)['participant_ID'].values
     X_train = []
     X_test = []
@@ -72,7 +73,6 @@ def apply_oversampling(X_train, y_train):
     oversample = RandomOverSampler(sampling_strategy='minority')
     X_train, y_train = oversample.fit_resample(X_train, y_train)
     X_train, y_train = shuffle(X_train, y_train, random_state=42)
-    print(X_train.shape)
     print(Counter(y_train))
 
 
@@ -133,7 +133,7 @@ def logistic_regression():
     print("Tuned hyperparameters :", best_params)
 
 
-logistic_regression()
+#logistic_regression()
 
 
 def random_forest():
@@ -157,7 +157,7 @@ def random_forest():
     print("Tuned hyperparameters :", best_params)
 
 
-#random_forest()
+random_forest()
 
 
 def svm():

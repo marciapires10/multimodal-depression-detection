@@ -1,7 +1,7 @@
 import pandas as pd
 
-train_file = '../train_split_Depression_AVEC2017.csv'
-dev_file = '../dev_split_Depression_AVEC2017.csv'
+train_file = '../../train_split_Depression_AVEC2017.csv'
+dev_file = '../../dev_split_Depression_AVEC2017.csv'
 test_file = '../full_test_split.csv'
 
 train = pd.read_csv(train_file)

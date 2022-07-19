@@ -59,7 +59,7 @@ def get_low_variance_features():
     print(sel.get_support())
 
 
-get_low_variance_features()
+#get_low_variance_features()
 
 
 def remove_low_variance_features():
@@ -87,7 +87,7 @@ def remove_low_variance_features():
             print("Participant " + str(id) + " doesn't exist.")
 
 
-remove_low_variance_features()
+#remove_low_variance_features()
 
 
 def get_f1_regression_features():
@@ -105,8 +105,10 @@ def get_f1_regression_features():
     X_covarep = all_mean_feat
     df = pd.read_csv("mfcc_features.csv", index_col="Participant_ID")
     y_covarep = df.PHQ8_Binary
+    print(len(X_covarep))
+    print(len(y_covarep))
 
-    def train_test(X, y, test="../text/test_split_Depression_AVEC2017.csv"):
+    def train_test(X, y, test="/home/marciapires/Desktop/multimodal-depression-detection/test_split_Depression_AVEC2017.csv"):
         test_participants = pd.read_csv(test)['participant_ID'].values
         X_train = []
         X_test = []
@@ -164,5 +166,5 @@ def remove_f1_regression_features():
             print("Participant " + str(id) + " doesn't exist.")
 
 
-remove_f1_regression_features()
+#remove_f1_regression_features()
 

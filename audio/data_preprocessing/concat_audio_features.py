@@ -22,7 +22,7 @@ def adjust_x(X):
 
 
 # mfcc features
-df_mfcc = pd.read_csv("mfcc_features.csv")
+df_mfcc = pd.read_csv("../data_preprocessing/mfcc_features.csv")
 X = df_mfcc.Participant_ID
 mfcc_ft = df_mfcc.MFCC_concat.apply(remove_brackets)
 mfcc_ft = adjust_x(mfcc_ft)
