@@ -31,7 +31,7 @@ X_dense = X.todense()
 y = df.PHQ8_Binary
 
 
-def train_test(X, y, test="../test_split_Depression_AVEC2017.csv"):
+def train_test(X, y, test="/home/marciapires/Desktop/multimodal-depression-detection/test_split_Depression_AVEC2017.csv"):
     test_participants = pd.read_csv(test)['participant_ID'].values
     X_train = []
     X_test = []
