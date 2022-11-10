@@ -6,20 +6,33 @@ import pandas as pd
 import torch
 import transformers
 import sklearn
+from imblearn.over_sampling import RandomOverSampler, SMOTE
 from imblearn.under_sampling import RandomUnderSampler
-from sklearn.metrics import classification_report
+from sklearn.feature_selection import SelectKBest, f_classif
+from sklearn.metrics import classification_report, f1_score, recall_score, precision_score
 from sklearn.utils import shuffle
 from transformers import BertTokenizer, BertForSequenceClassification
 
 
-df = pd.read_csv("../data_preprocessing/final_clean_transcripts.csv", index_col="Participant_ID")
-# print(df.head())
+df = pd.read_csv("../data_preprocessing/final_clean_transcripts5.csv", index_col="Participant_ID")
 
 X = df.Transcript
 y = df.PHQ8_Binary
 
+# set seed for reproducibility
+def set_seed(seed):
+    np.random.seed(seed)
+    os.environ['PYTHONHASHSEED'] = str(seed)
+    torch.manual_seed(seed)
+    random.seed(seed)
+
+
+set_seed(42)
+
+
 # split dataset into train, validation and test sets
-def train_test_val(X, y, test="../test_split_Depression_AVEC2017.csv", val="../dev_split_Depression_AVEC2017.csv"):
+def train_test_val(X, y, test="/home/marciapires/Desktop/multimodal-depression-detection/test_split_Depression_AVEC2017.csv",
+                   val="/home/marciapires/Desktop/multimodal-depression-detection/dev_split_Depression_AVEC2017.csv"):
     test_participants = pd.read_csv(test)['participant_ID'].values
     val_participants = pd.read_csv(val)['Participant_ID'].values
     X_train = []
@@ -30,6 +43,7 @@ def train_test_val(X, y, test="../test_split_Depression_AVEC2017.csv", val="../d
     y_val = []
 
     for i in range(y.shape[0]):
+        print(i)
         participant_no = y.index[i]
 
         if participant_no in test_participants:
@@ -75,32 +89,15 @@ print("Depression distribution on train dataset: (ND/D)", count_train)
 
 # need to balance the train dataset
 X_train = X_train.reshape(-1, 1)
+oversample = RandomOverSampler(sampling_strategy='minority')
 undersample = RandomUnderSampler(sampling_strategy='majority')
-X_train, y_train = undersample.fit_resample(X_train, y_train)
+X_train, y_train = oversample.fit_resample(X_train, y_train)
 X_train, y_train = shuffle(X_train, y_train, random_state=42)
 X_train = X_train.squeeze(1)
 
+
 count_train = count_depression(y_train)
 print("Depression distribution on train dataset AFTER balancing: (ND/D)", count_train)
-
-
-train_final = pd.DataFrame({'Transcript': X_train.tolist(), 'PHQ8_Binary': y_train}).to_csv('train_undersample.csv', index=False)
-# train_final.to_csv('train_undersample.csv', index=False)
-df_train = pd.read_csv("train_undersample.csv")
-# print(df_train.head())
-X_train = df_train.Transcript
-y_train = df_train.PHQ8_Binary
-
-# set seed for reproducibility
-def set_seed(seed):
-    torch.manual_seed(seed)
-    np.random.seed(seed)
-    random.seed(seed)
-
-    # torch.cuda.manual_seed_all(seed)
-    # torch.backends.cudnn.deterministic = True
-    # torch.backends.cudnn.benchmark = False
-    #os.environ['PYTHONHASHSEED'] = str(seed)
 
 
 # Followed the following tutorial for BERT: https://medium.com/analytics-vidhya/a-gentle-introduction-to-implementing-bert-using-hugging-face-35eb480cff3
@@ -116,7 +113,7 @@ def encode(data, tokenizer):
     attention_mask = []
     for text in data:
         tokenized_text = tokenizer.encode_plus(text,
-                                               max_length=128,
+                                               max_length=512,
                                                add_special_tokens=True,
                                                pad_to_max_length=True,
                                                return_attention_mask=True)
@@ -127,27 +124,23 @@ def encode(data, tokenizer):
 
 
 # get batches: convert lists to tensors, wrap tensors, create samplers and return final dataloader
-
-# last modification: 09.06, 17h20 added a generator as suggested by: https://towardsdatascience.com/random-seeds-and-reproducibility-933da79446e3
 def get_batches(x, y, tokenizer, batch_size):
 
     y = torch.tensor(list(y), dtype=torch.long)
     input_ids, attention_mask = encode(x, tokenizer)
     tensor_dataset = torch.utils.data.TensorDataset(input_ids, attention_mask, y)
     tensor_randomsampler = torch.utils.data.RandomSampler(tensor_dataset)
-    g = torch.Generator()
-    g.manual_seed(42)
-    tensor_dataloader = torch.utils.data.DataLoader(tensor_dataset, sampler=tensor_randomsampler, batch_size=batch_size,
-                                                    generator=g)
+    tensor_dataloader = torch.utils.data.DataLoader(tensor_dataset, sampler=tensor_randomsampler, batch_size=batch_size)
     return tensor_dataloader
 
-train_dataloader = get_batches(X_train, y_train, tokenizer, batch_size=2)
-val_dataloader = get_batches(X_val, y_val, tokenizer, batch_size=2)
-test_dataloader = get_batches(X_test, y_test, tokenizer, batch_size=2)
+
+train_dataloader = get_batches(X_train, y_train, tokenizer, batch_size=8)
+val_dataloader = get_batches(X_val, y_val, tokenizer, batch_size=8)
+test_dataloader = get_batches(X_test, y_test, tokenizer, batch_size=8)
 
 
 # define parameters for the model
-epochs = 2
+epochs = 4
 parameters = {
     'learning_rate': 5e-5,
     'num_warmup_steps': 1000,
@@ -159,7 +152,8 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("Device in use: ", device)
 
 # define the model being used
-model = BertForSequenceClassification.from_pretrained('bert-base-uncased', num_labels=2, output_hidden_states=True, output_attentions=True)
+model = BertForSequenceClassification.from_pretrained('bert-base-uncased', num_labels=2, output_hidden_states=True,
+                                                      output_attentions=True)
 model.to(device)
 
 # define the optimizer
@@ -187,7 +181,7 @@ def train_model(train_dataloader, model, optimizer, scheduler, epochs, device):
         #     print("loss - {0}, iteration - {1}/{2}".format(loss, e + 1, i))
 
         model.zero_grad()
-        #optimizer.zero_grad()
+        optimizer.zero_grad()
 
         # calculate loss
         train_loss = train_loss + loss.item()
@@ -253,10 +247,16 @@ def evaluate_test(test_dataloader, model, device):
             y_true.extend(target)
             y_pred.extend(predictions)
 
+    print(f1_score(y_true, y_pred))
+    print(recall_score(y_true, y_pred))
+    print(precision_score(y_true, y_pred))
+    print(y_true)
+    print(y_pred)
+
     return print(classification_report(y_true, y_pred))
 
 
-set_seed(42)
+#set_seed(42)
 
 train_losses, valid_losses = [], []
 for e in range(epochs):
@@ -265,12 +265,12 @@ for e in range(epochs):
 
     print(f'Train loss: {train_loss:.3f}\tValidation loss: {valid_loss:.3f}\n')
 
-    # if len(valid_losses) > 2 and all(valid_loss > loss for loss in valid_losses[-3:]):
-    #     print('Stopping early')
-    #     break
-    #
-    # train_losses.append(train_loss)
-    # valid_losses.append(valid_loss)
+    if len(valid_losses) > 2 and all(valid_loss > loss for loss in valid_losses[-3:]):
+        print('Stopping early')
+        break
+
+    train_losses.append(train_loss)
+    valid_losses.append(valid_loss)
 
 
 evaluate_test(test_dataloader, model, device)
