@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-df = pd.read_csv("../data_preprocessing/final_clean_transcripts5.csv").sort_values(by=['Participant_ID'], ascending=True)
+df = pd.read_csv("../text/data_preprocessing/final_clean_transcripts5.csv").sort_values(by=['Participant_ID'], ascending=True)
 
 # # histogram with PHQ8 Score distribution
 # plt.hist(df.PHQ8_Score, bins=24)
@@ -97,7 +97,7 @@ def train_test_val(X, y, test="/home/marciapires/Desktop/multimodal-depression-d
 
 
 
-y = pd.read_csv("../data_preprocessing/final_clean_transcripts5.csv", index_col="Participant_ID")['PHQ8_Score']
+y = pd.read_csv("../text/data_preprocessing/final_clean_transcripts5.csv", index_col="Participant_ID")['PHQ8_Score']
 
 X_train, X_test, X_val, y_train, y_test, y_val = train_test_val(X, y)
 c1 = ['#B9E0A5']
@@ -118,7 +118,7 @@ plt.show()
 
 # distribution of depression presence (train + test)
 
-y = pd.read_csv("../data_preprocessing/final_clean_transcripts5.csv", index_col="Participant_ID")['PHQ8_Binary']
+y = pd.read_csv("../text/data_preprocessing/final_clean_transcripts5.csv", index_col="Participant_ID")['PHQ8_Binary']
 X_train, X_test, y_train, y_test = train_test(X, y)
 
 
@@ -161,7 +161,7 @@ def count_depression(set):
 ####################################################################################################
 
 # distribution of depression presence (train + val + test)
-df = pd.read_csv("../data_preprocessing/final_clean_transcripts5.csv").sort_values(by=['Participant_ID'], ascending=True)
+df = pd.read_csv("../text/data_preprocessing/final_clean_transcripts5.csv").sort_values(by=['Participant_ID'], ascending=True)
 X = df["Participant_ID"].values
 y = df['PHQ8_Binary'].values
 
@@ -193,7 +193,7 @@ def train_test_val(X, y, test="/home/marciapires/Desktop/multimodal-depression-d
     return np.array(X_train), np.array(X_test), np.array(X_val), np.array(y_train), np.array(y_test), np.array(y_val)
 
 
-y = pd.read_csv("../data_preprocessing/final_clean_transcripts5.csv", index_col="Participant_ID")['PHQ8_Binary']
+y = pd.read_csv("../text/data_preprocessing/final_clean_transcripts5.csv", index_col="Participant_ID")['PHQ8_Binary']
 X_train, X_test, X_val, y_train, y_test, y_val = train_test_val(X, y)
 
 # x_labels = ['Train', 'Dev', 'Test']

@@ -12,20 +12,21 @@ from sklearn.model_selection import RepeatedKFold, GridSearchCV
 from sklearn.naive_bayes import GaussianNB
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.neural_network import MLPClassifier
+from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.utils import shuffle
 from xgboost import XGBClassifier
-from sklearn.preprocessing import StandardScaler
 
 warnings.filterwarnings('ignore')
 
-df = pd.read_csv("../data_preprocessing/mfcc_features.csv", index_col="Participant_ID")
+df = pd.read_csv("/home/marciapires/Desktop/multimodal-depression-detection/audio/data_preprocessing/mfcc_features.csv", index_col="Participant_ID")
 y = df.PHQ8_Binary
 
+# all features concat
+df_allfeatures = pd.read_csv("/home/marciapires/Desktop/multimodal-depression-detection/video/data_preprocessing/all_video_features2.csv", index_col="Participant_ID",
+                             converters={'all_features_concat': pd.eval})
 
-df_allfeatures = pd.read_csv("../data_preprocessing/all_audio_features4.csv", index_col="Participant_ID",
-                              converters={'all_features_concat': pd.eval})
 
 
 X_all = df_allfeatures['all_features_concat'].values.tolist()
@@ -63,11 +64,12 @@ X_train, X_test, y_train, y_test = train_test(X_all, y)
 X_train, y_train = shuffle(X_train, y_train, random_state=42)
 
 
+
 # sc = StandardScaler()
 # X_train = sc.fit_transform(X_train)
 # X_test = sc.transform(X_test)
-#
-classif_selector = SelectKBest(score_func=f_classif, k=150)
+
+classif_selector = SelectKBest(score_func=f_classif, k=100)
 X_train = classif_selector.fit_transform(X_train, y_train)
 X_test = classif_selector.transform(X_test)
 
@@ -86,41 +88,44 @@ def apply_resampling(option, X_train, y_train):
     return X_train, y_train
 
 
-# X_train, y_train = apply_resampling("smote", X_train, y_train)
+#X_train, y_train = apply_resampling("smote", X_train, y_train)
+
 
 
 # save data sets
-# train_x = open('X_train_audio.pickle', 'wb')
+# train_x = open('X_train_video.pickle', 'wb')
 # pickle.dump(X_train, train_x)
 # train_x.close()
 #
-# train_y = open('y_train_audio.pickle', 'wb')
+# train_y = open('y_train_video.pickle', 'wb')
 # pickle.dump(y_train, train_y)
 # train_y.close()
 #
-# test_x = open('X_test_audio.pickle', 'wb')
+# test_x = open('X_test_video.pickle', 'wb')
 # pickle.dump(X_test, test_x)
 # test_x.close()
 #
-# test_y = open('y_test_audio.pickle', 'wb')
+# test_y = open('y_test_video.pickle', 'wb')
 # pickle.dump(y_test, test_y)
 # test_y.close()
 
 
 def k_cross_validation(model, grid, X=X_train, y=y_train):
     rkf = RepeatedKFold(n_splits=5, n_repeats=3, random_state=42)
+    #rkf = StratifiedKFold(n_splits=5, random_state=42, shuffle=True)
     scoring = {"f1": make_scorer(f1_score), "recall": make_scorer(recall_score)}
 
-    # cv = GridSearchCV(model, grid, cv=rkf, scoring=scoring, refit='f1', n_jobs=-1)
+    #cv = GridSearchCV(model, grid, cv=rkf, scoring=scoring, refit='f1', n_jobs=-1)
     cv = GridSearchCV(model, grid, cv=rkf, refit=True, n_jobs=-1)
 
     f1_score_res = []
     recall_res = []
     precision_res = []
 
-    for train_index, val_index in rkf.split(X):
+    for train_index, val_index in rkf.split(X, y):
         X_train, X_val = X[train_index], X[val_index]
         y_train, y_val = y[train_index], y[val_index]
+
 
         X_train, y_train = apply_resampling("smote", X_train, y_train)
 
@@ -147,8 +152,17 @@ def k_cross_validation(model, grid, X=X_train, y=y_train):
     grid_predictions = cv.predict(X_test)
     print("predictions: ", grid_predictions)
 
+    f1_scr = f1_score(y_test, grid_predictions)
+    recall = recall_score(y_test, grid_predictions)
+    precision = precision_score(y_test, grid_predictions)
+
+
+    print("F1-Score: ", f1_scr)
+    print("Recall: ", recall)
+    print("Precision: ", precision)
+
     # save best model
-    # file = open(str(model) + '_audio', 'wb')
+    # file = open(str(model) + '_video', 'wb')
     # pickle.dump(cv.best_estimator_, file)
     # file.close()
 
@@ -161,10 +175,13 @@ def evaluate(best_model):
 
     grid_predictions = best_model.predict(X_test)
     print("predictions: ", grid_predictions)
+    print("true: ", y_test)
+
 
     f1_scr = f1_score(y_test, grid_predictions)
     recall = recall_score(y_test, grid_predictions)
     precision = precision_score(y_test, grid_predictions)
+
 
     print("F1-Score: ", f1_scr)
     print("Recall: ", recall)
@@ -173,20 +190,16 @@ def evaluate(best_model):
     return grid_predictions
 
 
-
 def logistic_regression():
 
     grid = [{'C': np.logspace(-3, 3, 7), 'penalty': ['l1'], 'solver': ['liblinear', 'sag', 'saga']},
             {'C': np.logspace(-3, 3, 7), 'penalty': ['l2'], 'solver': ['lbfgs', 'newton-cg']}]
-    # model = LogisticRegression(max_iter=30000)
-
-    #grid = [{'C': np.logspace(-3, 3, 7), 'penalty': ['l1', 'l2']}]
     model = LogisticRegression(random_state=42)
 
     predictions = k_cross_validation(model, grid)
 
     # try:
-    #     file = open(str(model) + '_audio', 'rb')
+    #     file = open(str(model) + '_video', 'rb')
     #     final_model = pickle.load(file)
     #     file.close()
     #
@@ -195,7 +208,7 @@ def logistic_regression():
     # except (OSError, IOError) as e:
     #     k_cross_validation(model, grid)
     #
-    #     file = open(str(model) + '_audio', 'rb')
+    #     file = open(str(model) + '_video', 'rb')
     #     final_model = pickle.load(file)
     #     file.close()
     #
@@ -206,7 +219,6 @@ def logistic_regression():
 
 # lr_predictions = logistic_regression()
 # print(lr_predictions)
-
 
 def random_forest():
 
@@ -221,7 +233,7 @@ def random_forest():
     predictions = k_cross_validation(model, grid)
 
     # try:
-    #     file = open(str(model) + '_audio', 'rb')
+    #     file = open(str(model) + '_video', 'rb')
     #     final_model = pickle.load(file)
     #     file.close()
     #
@@ -230,16 +242,15 @@ def random_forest():
     # except (OSError, IOError) as e:
     #     k_cross_validation(model, grid)
     #
-    #     file = open(str(model) + '_audio', 'rb')
+    #     file = open(str(model) + '_video', 'rb')
     #     final_model = pickle.load(file)
     #     file.close()
     #
     #     predictions = evaluate(final_model)
 
-
     return predictions
 
-#
+
 # rf_predictions = random_forest()
 # print(rf_predictions)
 
@@ -254,7 +265,7 @@ def decision_tree():
     predictions = k_cross_validation(model, grid)
 
     # try:
-    #     file = open(str(model) + '_audio', 'rb')
+    #     file = open(str(model) + '_video', 'rb')
     #     final_model = pickle.load(file)
     #     file.close()
     #
@@ -263,7 +274,7 @@ def decision_tree():
     # except (OSError, IOError) as e:
     #     k_cross_validation(model, grid)
     #
-    #     file = open(str(model) + '_audio', 'rb')
+    #     file = open(str(model) + '_video', 'rb')
     #     final_model = pickle.load(file)
     #     file.close()
     #
@@ -281,12 +292,12 @@ def svm():
     grid = [{'kernel': ['rbf'], 'gamma': [1e-3, 1e-4], 'C': [1, 10, 100]},
             {'kernel': ['poly'], 'C': [1, 10, 100]},
             {'kernel': ['linear'], 'C': [1, 10, 100]}]
-    model = SVC(random_state=42)
+    model = SVC()
 
     predictions = k_cross_validation(model, grid)
 
     # try:
-    #     file = open(str(model) + '_audio', 'rb')
+    #     file = open(str(model) + '_video', 'rb')
     #     final_model = pickle.load(file)
     #     file.close()
     #
@@ -295,7 +306,7 @@ def svm():
     # except (OSError, IOError) as e:
     #     k_cross_validation(model, grid)
     #
-    #     file = open(str(model) + '_audio', 'rb')
+    #     file = open(str(model) + '_video', 'rb')
     #     final_model = pickle.load(file)
     #     file.close()
     #
@@ -317,7 +328,7 @@ def knn():
     predictions = k_cross_validation(model, grid)
 
     # try:
-    #     file = open(str(model) + '_audio', 'rb')
+    #     file = open(str(model) + '_video', 'rb')
     #     final_model = pickle.load(file)
     #     file.close()
     #
@@ -326,7 +337,7 @@ def knn():
     # except (OSError, IOError) as e:
     #     k_cross_validation(model, grid)
     #
-    #     file = open(str(model) + '_audio', 'rb')
+    #     file = open(str(model) + '_video', 'rb')
     #     final_model = pickle.load(file)
     #     file.close()
     #
@@ -334,21 +345,22 @@ def knn():
 
     return predictions
 
-#
+
 # knn_predictions = knn()
 # print(knn_predictions)
 
 
 def nb():
     #grid = {'alpha': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]}
-    grid = {'var_smoothing': np.logspace(0,-9, num=100)}
+    grid = {'var_smoothing': np.logspace(0, -9, num=100)}
     #model = MultinomialNB()
     model = GaussianNB()
 
     predictions = k_cross_validation(model, grid)
 
+
     # try:
-    #     file = open(str(model) + '_audio', 'rb')
+    #     file = open(str(model) + '_video', 'rb')
     #     final_model = pickle.load(file)
     #     file.close()
     #
@@ -357,7 +369,7 @@ def nb():
     # except (OSError, IOError) as e:
     #     k_cross_validation(model, grid)
     #
-    #     file = open(str(model) + '_audio', 'rb')
+    #     file = open(str(model) + '_video', 'rb')
     #     final_model = pickle.load(file)
     #     file.close()
     #
@@ -371,7 +383,7 @@ def nb():
 
 
 def mlp():
-    grid = {'hidden_layer_sizes': [(100,), (100,50,)], 'activation': ['tanh', 'relu'],
+    grid = {'hidden_layer_sizes': [(100,), (100, 50,)], 'activation': ['tanh', 'relu'],
             'solver': ['sgd', 'adam'], 'alpha': [0.0001, 0.05, 0.01], 'learning_rate': ['constant', 'adaptive']
     }
     model = MLPClassifier(random_state=42)
@@ -379,7 +391,7 @@ def mlp():
     predictions = k_cross_validation(model, grid)
 
     # try:
-    #     file = open(str(model) + '_audio', 'rb')
+    #     file = open(str(model) + '_video', 'rb')
     #     final_model = pickle.load(file)
     #     file.close()
     #
@@ -388,7 +400,7 @@ def mlp():
     # except (OSError, IOError) as e:
     #     k_cross_validation(model, grid)
     #
-    #     file = open(str(model) + '_audio', 'rb')
+    #     file = open(str(model) + '_video', 'rb')
     #     final_model = pickle.load(file)
     #     file.close()
     #
@@ -408,7 +420,7 @@ def xgboost():
     predictions = k_cross_validation(model, grid)
 
     # try:
-    #     file = open(str(model) + '_audio', 'rb')
+    #     file = open(str(model) + '_video', 'rb')
     #     final_model = pickle.load(file)
     #     file.close()
     #
@@ -417,7 +429,7 @@ def xgboost():
     # except (OSError, IOError) as e:
     #     k_cross_validation(model, grid)
     #
-    #     file = open(str(model) + '_audio', 'rb')
+    #     file = open(str(model) + '_video', 'rb')
     #     final_model = pickle.load(file)
     #     file.close()
     #
@@ -427,3 +439,4 @@ def xgboost():
 
 # xgboost_predictions = xgboost()
 # print(xgboost_predictions)
+

@@ -2,7 +2,7 @@ import librosa as librosa
 import numpy as np
 import pandas as pd
 
-from scipy.stats import kurtosis, skew
+from scipy.stats import kurtosis, skew, mode
 
 
 df = pd.read_csv("../full_labels.csv")
@@ -48,7 +48,7 @@ def save_mfcc_to_csv():
     mfcc_df.to_csv('mfcc_features.csv')
 
 
-save_mfcc_to_csv()
+#save_mfcc_to_csv()
 
 # remove unvoiced segments from covarep features csv
 def remove_unvoiced_segments():
@@ -73,7 +73,7 @@ def remove_unvoiced_segments():
             print("Participant " + str(id) + " doesn't exist.")
 
 
-remove_unvoiced_segments()
+#remove_unvoiced_segments()
 
 
 # extract statistical features from covarep/formant csv
@@ -96,6 +96,8 @@ def extract_statistical_features(source):
             extracted_kurtosis = []
             extracted_median = []
             extracted_min = []
+            extracted_max = []
+
             for column in df.columns:
                 extracted_mean.append(df[column].mean())
                 extracted_std.append(df[column].std())
@@ -103,9 +105,10 @@ def extract_statistical_features(source):
                 extracted_kurtosis.append(df[column].kurtosis())
                 extracted_median.append(df[column].median())
                 extracted_min.append(df[column].min())
+                extracted_max.append(df[column].max())
 
             new_df = pd.DataFrame([extracted_mean, extracted_std, extracted_skew, extracted_kurtosis, extracted_median,
-                                   extracted_min])
+                                   extracted_min, extracted_max])
             new_df.to_csv(new_path, index=False, header=None)
 
         except:

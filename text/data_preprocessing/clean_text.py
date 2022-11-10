@@ -1,5 +1,7 @@
 import re as re
 import string
+from collections import Counter
+
 import contractions
 
 import nltk
@@ -33,7 +35,7 @@ def lower_casing(tokens):
 
 def stopwords_removal(tokens):
     stopwords = nltk.corpus.stopwords.words('english')
-    stopwords.extend(['mmm', 'k', 'xxx', 'um', 'uh'])
+    stopwords.extend(['mmm', 'mm', 'hmm', 'mhm', 'k', 'xxx', 'um', 'uh'])
     stops = set(stopwords)
 
     return [token for token in tokens if token not in stops]
@@ -69,13 +71,48 @@ for t in df.Transcript:
     no_punct = punctuation_removal(tokens)
     lower = lower_casing(no_punct)
     no_stops = stopwords_removal(lower)
-    #lemm = lemmatization(no_stops)
+    lemm = lemmatization(no_stops)
     #stem = stemming(no_stops)
-    text = ' '.join(no_stops)
+    text = ' '.join(lemm)
 
     df['Transcript'] = df['Transcript'].replace({t: text})
 
-df.to_csv("final_clean_transcripts.csv", index=False)
+df.to_csv("final_clean_transcripts3.csv", index=False)
+
+new_df = pd.read_csv('final_clean_transcripts3.csv')
+
+X = new_df.Transcript
+
+cnt = Counter()
+for text in X.values:
+    for word in text.split():
+        cnt[word] += 1
+FREQWORDS = set([w for (w, wc) in cnt.most_common(20)])
+
+
+def remove_freqwords(text):
+    return " ".join([word for word in str(text).split() if word not in FREQWORDS])
+
+
+X = X.apply(lambda text: remove_freqwords(text))
+
+n_rare_words = 100
+cnt = Counter()
+for text in X.values:
+    for word in text.split():
+        cnt[word] += 1
+RAREWORDS = set([w for (w, wc) in cnt.most_common()[:-n_rare_words - 1:-1]])
+
+
+def remove_rarewords(text):
+    return " ".join([word for word in str(text).split() if word not in RAREWORDS])
+
+
+X = X.apply(lambda text: remove_rarewords(text))
+
+
+new_df['Transcript'] = X
+new_df.to_csv("final_clean_transcripts5.csv", index=False)
 
 # original_text = df.Transcript[1]
 # print(original_text)

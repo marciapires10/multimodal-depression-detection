@@ -33,7 +33,8 @@ def get_all_features(source):
     for idx, id in enumerate(X):
         try:
             if source == "covarep":
-                path = "/media/marciapires/My Passport/audio/{}_ftSelection2.csv".format(id)
+                # path = "/media/marciapires/My Passport/audio/{}_ftSelection2.csv".format(id)
+                path = "/media/marciapires/My Passport/audio/{}_cov.csv".format(id)
             else:
                 path = "/media/marciapires/My Passport/audio/{}_for.csv".format(id)
 
@@ -44,8 +45,9 @@ def get_all_features(source):
             fourth_row = df_audio.iloc[3].tolist()
             fifth_row = df_audio.iloc[4].tolist()
             sixth_row = df_audio.iloc[5].tolist()
+            seventh_row = df_audio.iloc[6].tolist()
 
-            full_features = first_row + second_row + third_row + fourth_row + fifth_row + sixth_row
+            full_features = first_row + second_row + third_row + fourth_row + fifth_row + sixth_row + seventh_row
             all_features.append(full_features)
 
         except:
@@ -64,13 +66,18 @@ all_features = []
 features = []
 
 for idx, id in enumerate(X):
+    # concat mfcc + covarep + formant
     mfcc_covarep = [y for x in [mfcc_ft[idx], covarep_ft[idx]] for y in x]
     first_ft.append(mfcc_covarep)
     prev_formant = [y for x in [first_ft[idx], formant_ft[idx]] for y in x]
     features.append([id, prev_formant])
 
+    # if only covarep + formant
+    # covarep_formant = [y for x in [covarep_ft[idx], formant_ft[idx]] for y in x]
+    # features.append([id, covarep_formant])
+
     new_df = pd.DataFrame(features, columns=['Participant_ID', 'all_features_concat'])
-    new_df.to_csv("all_audio_features2.csv", index=False)
+    new_df.to_csv("all_audio_features4.csv", index=False)
 
 
 
